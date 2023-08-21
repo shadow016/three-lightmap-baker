@@ -1,66 +1,70 @@
 import { Matrix4, ShaderMaterial, Texture, Vector3 } from "three";
-import { MeshBVH, MeshBVHUniformStruct, shaderIntersectFunction, shaderStructs } from 'three-mesh-bvh';
+import {
+  MeshBVH,
+  MeshBVHUniformStruct,
+  shaderIntersectFunction,
+  shaderStructs,
+} from "three-mesh-bvh";
 
 export type LightmapperMaterialOptions = {
-    bvh: MeshBVH,
-    invModelMatrix: Matrix4,
+  bvh: MeshBVH;
+  invModelMatrix: Matrix4;
 
-    positions: Texture,
-    normals: Texture,
+  positions: Texture;
+  normals: Texture;
 
-    casts: number,
-    
-    lightPosition: Vector3;
-    lightSize: number;
+  casts: number;
 
-    opacity: number;
-    sampleIndex: number;
+  lightPosition: Vector3;
+  lightSize: number;
 
-    directLightEnabled: boolean;
-    indirectLightEnabled: boolean;
-    ambientLightEnabled: boolean;
-    ambientDistance: number;
+  opacity: number;
+  sampleIndex: number;
+
+  directLightEnabled: boolean;
+  indirectLightEnabled: boolean;
+  ambientLightEnabled: boolean;
+  ambientDistance: number;
 };
 
 export class LightmapperMaterial extends ShaderMaterial {
+  constructor(options: LightmapperMaterialOptions) {
+    const bvhUniformStruct = new MeshBVHUniformStruct();
+    bvhUniformStruct.updateFrom(options.bvh);
+    console.log("bvhUniformStruct: ", bvhUniformStruct);
 
-    constructor(options: LightmapperMaterialOptions) {
+    super({
+      transparent: true,
 
-        const bvhUniformStruct = new MeshBVHUniformStruct();
-        bvhUniformStruct.updateFrom(options.bvh)
+      uniforms: {
+        bvh: { value: bvhUniformStruct },
+        positions: { value: options.positions },
+        normals: { value: options.normals },
+        invModelMatrix: { value: options.invModelMatrix },
+        casts: { value: options.casts },
+        lightPosition: { value: options.lightPosition },
+        lightSize: { value: options.lightSize },
+        opacity: { value: 1 },
+        sampleIndex: { value: 0 },
+        directLightEnabled: { value: options.directLightEnabled },
+        indirectLightEnabled: { value: options.indirectLightEnabled },
+        ambientLightEnabled: { value: options.ambientLightEnabled },
+        ambientDistance: { value: options.ambientDistance },
+      },
 
-        super({
-            transparent: true,
-
-            uniforms: {
-                bvh: { value: bvhUniformStruct },
-                positions: { value: options.positions },
-                normals: { value: options.normals },
-                invModelMatrix: { value: options.invModelMatrix },
-                casts: { value: options.casts },
-                lightPosition: { value: options.lightPosition },
-                lightSize: { value: options.lightSize },
-                opacity: { value: 1 },
-                sampleIndex: { value: 0 },
-                directLightEnabled: { value: options.directLightEnabled },
-                indirectLightEnabled: { value: options.indirectLightEnabled },
-                ambientLightEnabled: { value: options.ambientLightEnabled },
-                ambientDistance: { value: options.ambientDistance },
-            },
-            
-            vertexShader: /* glsl */`
+      vertexShader: /* glsl */ `
                 varying vec2 vUv;
                 void main() {
                     gl_Position = vec4( position, 1.0 );
                     vUv = uv;
                 }
             `,
-        
-            fragmentShader: /* glsl */`
+
+      fragmentShader: /* glsl */ `
                 precision highp isampler2D;
                 precision highp usampler2D;
-                ${ shaderStructs }
-                ${ shaderIntersectFunction }
+                ${shaderStructs}
+                ${shaderIntersectFunction}
                 
                 uniform mat4 invModelMatrix;
                 uniform sampler2D positions;
@@ -187,7 +191,8 @@ export class LightmapperMaterial extends ShaderMaterial {
                     
                     if(directLightEnabled) {
                         for ( int i = 0; i < casts; i++ ) {
-                            vec3 newDirection = lightPosition - (rayOrigin + randomSpherePoint(rand3() * 0.05) * lightSize);
+                            // vec3 newDirection = lightPosition - (rayOrigin + randomSpherePoint(rand3() * 0.05) * lightSize);
+                            vec3 newDirection = lightPosition;
                             
                             newDirection = normalize(newDirection);
                             bool hit = bvhIntersectFirstHit( bvh, rayOrigin, newDirection, faceIndices, faceNormal, barycoord, side, dist );
@@ -228,8 +233,7 @@ export class LightmapperMaterial extends ShaderMaterial {
         
                     gl_FragColor = finalColor;
                 }
-            `
-        });
-    }
+            `,
+    });
+  }
 }
-
