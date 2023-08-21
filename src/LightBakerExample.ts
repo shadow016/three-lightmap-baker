@@ -245,6 +245,15 @@ export class LightBakerExample {
 
         this.generateLightmap();
 
+        const group: Group = this.scene.getObjectByName("group");
+        console.log("group: ", group);
+        group.traverse((child: Mesh) => {
+          if (child.isMesh) {
+            console.log(`child: ${child.name}`);
+            console.log(child.geometry.getAttribute("uv2"));
+          }
+        });
+
         // Todo: Not sure why need this in a timeout...
         setTimeout(() => {
           this.lightmapper.render();
@@ -292,14 +301,32 @@ export class LightBakerExample {
     // console.log("currentModelMeshes: ", this.currentModelMeshs);
 
     const currGroup = new Group();
+    currGroup.name = "group";
 
-    const plane = new Mesh(
-      new PlaneGeometry(20, 20),
-      new MeshBasicMaterial({ color: 0xaaaaaa })
+    const groundVec3s = [
+      new Vector3(-10, 0, -10),
+      new Vector3(-10, 0, 10),
+      new Vector3(10, 0, 10),
+      new Vector3(10, 0, -10),
+    ];
+    const groundGeom = getPolygonGeometryFromVector3s(groundVec3s, 0);
+    groundGeom.computeVertexNormals();
+    const ground = new Mesh(
+      groundGeom,
+      new MeshStandardMaterial({ color: 0xaaaaaa })
     );
-    plane.rotation.x = -Math.PI / 2;
-    this.currentModelMeshs.push(plane);
-    currGroup.add(plane);
+    ground.name = "ground";
+    this.currentModelMeshs.push(ground);
+    currGroup.add(ground);
+
+    // const plane = new Mesh(
+    //   new PlaneGeometry(20, 20),
+    //   new MeshBasicMaterial({ color: 0xaaaaaa })
+    // );
+    // plane.rotation.x = -Math.PI / 2;
+    // plane.name = "ground";
+    // this.currentModelMeshs.push(plane);
+    // currGroup.add(plane);
     // this.scene.add(plane);
 
     // const cube = new Mesh(
@@ -331,12 +358,12 @@ export class LightBakerExample {
     currGroup.add(buildingMesh);
     // this.scene.add(buildingMesh);
 
-    const shadowPos = new Mesh(
-      new BoxGeometry(0.1, 0.1, 0.1),
-      new MeshBasicMaterial({ color: 0x00ff00 })
-    );
-    shadowPos.position.set(0, 0, -1.5);
-    this.scene.add(shadowPos);
+    // const shadowPos = new Mesh(
+    //   new BoxGeometry(0.1, 0.1, 0.1),
+    //   new MeshBasicMaterial({ color: 0x00ff00 })
+    // );
+    // shadowPos.position.set(0, 0, -1.5);
+    // this.scene.add(shadowPos);
 
     const triVec3s = [
       new Vector3(0, 0, 0),
@@ -347,6 +374,7 @@ export class LightBakerExample {
     triGeom.computeVertexNormals();
     const triMat = new MeshBasicMaterial({ color: 0x0000ff });
     const triMesh = new Mesh(triGeom, triMat);
+    triMesh.name = "triangle";
     triMesh.translateZ(-1);
     this.currentModelMeshs.push(triMesh);
     currGroup.add(triMesh);
@@ -362,6 +390,7 @@ export class LightBakerExample {
     quadGeom.computeVertexNormals();
     const quadMat = new MeshStandardMaterial({ color: 0x0000ff });
     const quadMesh = new Mesh(quadGeom, quadMat);
+    quadMesh.name = "quad";
     quadMesh.translateZ(-1);
     this.currentModelMeshs.push(quadMesh);
     currGroup.add(quadMesh);
@@ -473,6 +502,9 @@ export class LightBakerExample {
     }
 
     if (this.options.debugTextures) {
+      console.log("position texture: ", this.positionTexture.texture);
+      console.log("normal texture: ", this.normalTexture.texture);
+      console.log("lightmap texture: ", this.lightmapTexture);
       this.debugPosition = this.createDebugTexture(
         this.positionTexture.texture,
         new Vector3(0, 10, 0)
