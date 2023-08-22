@@ -278,48 +278,81 @@ export class LightBakerExample {
           console.log("normal texture: ", this.normalTexture.texture);
           console.log("lightmap texture: ", this.lightmapTexture.texture);
           console.log("lightmap render target: ", this.lightmapTexture);
+        }, 0);
+      });
+    this.pane
+      .addButton({
+        title: "Save lightmap",
+      })
+      .on("click", () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = this.lightmapTexture.width;
+        canvas.height = this.lightmapTexture.height;
 
-          const canvas = document.createElement("canvas");
-          canvas.width = this.lightmapTexture.width;
-          canvas.height = this.lightmapTexture.height;
+        const pixels = new Float32Array(
+          this.lightmapTexture.width * this.lightmapTexture.height * 4
+        );
+        this.renderer.readRenderTargetPixels(
+          this.lightmapTexture,
+          0,
+          0,
+          this.lightmapTexture.width,
+          this.lightmapTexture.height,
+          pixels
+        );
+        // console.log("pixels: ", pixels);
 
-          const pixels = new Float32Array(
-            this.lightmapTexture.width * this.lightmapTexture.height * 4
-          );
-          this.renderer.readRenderTargetPixels(
-            this.lightmapTexture,
-            0,
-            0,
-            this.lightmapTexture.width,
-            this.lightmapTexture.height,
-            pixels
-          );
-          // console.log("pixels: ", pixels);
-
-          const pixelsUint = new Uint8ClampedArray(pixels.length);
-          this.lightmapTexture.width, this.lightmapTexture.height;
-          for (let i = 0; i < pixels.length; i += 1) {
-            pixelsUint[i] = Math.round(pixels[i] * 255);
-          }
-          const imageData = new ImageData(
-            flipPixelsY(
-              pixelsUint,
-              this.lightmapTexture.width,
-              this.lightmapTexture.height
-            ),
+        const pixelsUint = new Uint8ClampedArray(pixels.length);
+        this.lightmapTexture.width, this.lightmapTexture.height;
+        for (let i = 0; i < pixels.length; i += 1) {
+          pixelsUint[i] = Math.round(pixels[i] * 255);
+        }
+        const imageData = new ImageData(
+          flipPixelsY(
+            pixelsUint,
             this.lightmapTexture.width,
             this.lightmapTexture.height
-          );
-          const context = canvas.getContext("2d");
-          context.putImageData(imageData, 0, 0);
-          context.scale(1, -1);
-          context.drawImage(canvas, 0, 0);
-          const dataURL = canvas.toDataURL("image/png");
-          const link = document.createElement("a");
-          link.href = dataURL;
-          link.download = "lightmap.png";
-          link.click();
-        }, 0);
+          ),
+          this.lightmapTexture.width,
+          this.lightmapTexture.height
+        );
+        const context = canvas.getContext("2d");
+        context.putImageData(imageData, 0, 0);
+        context.scale(1, -1);
+        context.drawImage(canvas, 0, 0);
+        const dataURL = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = dataURL;
+        link.download = "lightmap.png";
+        link.click();
+      });
+    this.pane
+      .addButton({
+        title: "Save attributes",
+      })
+      .on("click", () => {
+        const group: Group = this.scene.getObjectByName("group");
+        console.log("group: ", group);
+        const attributes = {};
+        group.traverse((child: Mesh) => {
+          if (child.isMesh) {
+            console.log(`child: ${child.name}`);
+            console.log(child.geometry.getAttribute("uv2"));
+            attributes[child.name] = {
+              attributes: child.geometry.attributes,
+              index: child.geometry.index,
+            };
+          }
+        });
+        console.log("attributes: ", JSON.stringify(attributes));
+        const blob = new Blob([JSON.stringify(attributes)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.download = "attributes.json";
+        link.href = url;
+        link.click();
       });
 
     this.pane.addInput(this.options, "pause");
@@ -458,6 +491,47 @@ export class LightBakerExample {
     currGroup.add(quadMesh);
     // this.scene.add(quadMesh);
 
+    const arbitraryVec3s = [
+      // new Vector3(1.16, 0, 4.96),
+      // new Vector3(4.02, 0, 5.76),
+      // new Vector3(6.84, 0, 4.4),
+      new Vector3(5.3, 0, 2.44),
+      new Vector3(6.1, 0, 1),
+      new Vector3(2.84, 0, 0.5),
+      new Vector3(1, 0, 2),
+    ];
+    const arbitraryVec2s = arbitraryVec3s.map(
+      (vec3) => new Vector2(vec3.x, vec3.z)
+    );
+    const arbitraryShape = new Shape(arbitraryVec2s);
+    const arbitraryGeom = BufferGeometryUtils.BufferGeometryUtils.mergeVertices(
+      new ExtrudeGeometry(arbitraryShape, {
+        depth: height / 2,
+        steps: 1,
+        bevelEnabled: false,
+      })
+    );
+    const arbitraryMesh = new Mesh(
+      arbitraryGeom,
+      new MeshStandardMaterial({ color: 0xffff00 })
+    );
+    arbitraryMesh.translateZ(-1.5);
+    arbitraryMesh.translateX(-3);
+    arbitraryMesh.rotateX(-Math.PI / 2);
+    arbitraryMesh.name = "arbitrary";
+
+    // const arbitraryGeom = getPolygonGeometryFromVector3s(arbitraryVec3s, 0.5);
+    // arbitraryGeom.computeVertexNormals();
+    // const arbitraryMat = new MeshStandardMaterial({ color: 0xffff00 });
+    // const arbitraryMesh = new Mesh(arbitraryGeom, arbitraryMat);
+    // arbitraryMesh.translateZ(-7.5);
+    // arbitraryMesh.translateX(-3);
+    // arbitraryMesh.name = "arbitrary";
+
+    this.currentModelMeshs.push(arbitraryMesh);
+    currGroup.add(arbitraryMesh);
+    // this.scene.add(arbitraryMesh);
+
     // const cube2 = new Mesh(
     //   new BoxGeometry(0.5, 4, 0.5),
     //   new MeshBasicMaterial({ color: 0xffffff })
@@ -530,7 +604,7 @@ export class LightBakerExample {
     setTimeout(() => {
       this.options.pause = true;
       this.pane.refresh();
-    }, 2000);
+    }, 0);
   }
 
   createDebugTexture(texture: Texture, position: Vector3) {
