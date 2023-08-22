@@ -70,6 +70,23 @@ const parapetCoords = [
   ],
 ];
 
+const flipPixelsY = (
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number
+) => {
+  const flippedPixels = new Uint8ClampedArray(pixels.length);
+  for (let y = 0; y < height; y += 1) {
+    const offsetY = y * width * 4;
+    const flippedOffsetY = (height - y - 1) * width * 4;
+    flippedPixels.set(
+      pixels.subarray(offsetY, offsetY + width * 4),
+      flippedOffsetY
+    );
+  }
+  return flippedPixels;
+};
+
 const getPolygonGeometryFromVector3s = (
   vector3s: Vector3[],
   offset: number
@@ -139,7 +156,7 @@ export class LightBakerExample {
   options = {
     model: "level_blockout",
     renderMode: "beauty",
-    lightMapSize: 1024,
+    lightMapSize: 4096,
     casts: 1,
     filterMode: "linear",
     directLightEnabled: true,
@@ -257,6 +274,51 @@ export class LightBakerExample {
         // Todo: Not sure why need this in a timeout...
         setTimeout(() => {
           this.lightmapper.render();
+          console.log("position texture: ", this.positionTexture.texture);
+          console.log("normal texture: ", this.normalTexture.texture);
+          console.log("lightmap texture: ", this.lightmapTexture.texture);
+          console.log("lightmap render target: ", this.lightmapTexture);
+
+          const canvas = document.createElement("canvas");
+          canvas.width = this.lightmapTexture.width;
+          canvas.height = this.lightmapTexture.height;
+
+          const pixels = new Float32Array(
+            this.lightmapTexture.width * this.lightmapTexture.height * 4
+          );
+          this.renderer.readRenderTargetPixels(
+            this.lightmapTexture,
+            0,
+            0,
+            this.lightmapTexture.width,
+            this.lightmapTexture.height,
+            pixels
+          );
+          // console.log("pixels: ", pixels);
+
+          const pixelsUint = new Uint8ClampedArray(pixels.length);
+          this.lightmapTexture.width, this.lightmapTexture.height;
+          for (let i = 0; i < pixels.length; i += 1) {
+            pixelsUint[i] = Math.round(pixels[i] * 255);
+          }
+          const imageData = new ImageData(
+            flipPixelsY(
+              pixelsUint,
+              this.lightmapTexture.width,
+              this.lightmapTexture.height
+            ),
+            this.lightmapTexture.width,
+            this.lightmapTexture.height
+          );
+          const context = canvas.getContext("2d");
+          context.putImageData(imageData, 0, 0);
+          context.scale(1, -1);
+          context.drawImage(canvas, 0, 0);
+          const dataURL = canvas.toDataURL("image/png");
+          const link = document.createElement("a");
+          link.href = dataURL;
+          link.download = "lightmap.png";
+          link.click();
         }, 0);
       });
 
@@ -502,9 +564,6 @@ export class LightBakerExample {
     }
 
     if (this.options.debugTextures) {
-      console.log("position texture: ", this.positionTexture.texture);
-      console.log("normal texture: ", this.normalTexture.texture);
-      console.log("lightmap texture: ", this.lightmapTexture);
       this.debugPosition = this.createDebugTexture(
         this.positionTexture.texture,
         new Vector3(0, 10, 0)

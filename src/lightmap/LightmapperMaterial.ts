@@ -31,7 +31,7 @@ export class LightmapperMaterial extends ShaderMaterial {
   constructor(options: LightmapperMaterialOptions) {
     const bvhUniformStruct = new MeshBVHUniformStruct();
     bvhUniformStruct.updateFrom(options.bvh);
-    console.log("bvhUniformStruct: ", bvhUniformStruct);
+    // console.log("bvhUniformStruct: ", bvhUniformStruct);
 
     super({
       transparent: true,
