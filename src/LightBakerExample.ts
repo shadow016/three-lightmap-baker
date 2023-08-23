@@ -494,7 +494,7 @@ export class LightBakerExample {
     const arbitraryVec3s = [
       // new Vector3(1.16, 0, 4.96),
       // new Vector3(4.02, 0, 5.76),
-      // new Vector3(6.84, 0, 4.4),
+      new Vector3(6.84, 0, 4.4),
       new Vector3(5.3, 0, 2.44),
       new Vector3(6.1, 0, 1),
       new Vector3(2.84, 0, 0.5),
