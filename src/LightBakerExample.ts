@@ -39,6 +39,7 @@ import {
 } from "./lightmap/Lightmapper";
 import { mergeGeometry } from "./utils/GeometryUtils";
 import { LoadGLTF } from "./utils/LoaderUtils";
+import pako from "pako";
 
 const models = {
   ["level_blockout.glb"]: "level_blockout.glb",
@@ -70,12 +71,29 @@ const parapetCoords = [
   ],
 ];
 
-const flipPixelsY = (
+const flipPixelsUint8Y = (
   pixels: Uint8ClampedArray,
   width: number,
   height: number
 ) => {
   const flippedPixels = new Uint8ClampedArray(pixels.length);
+  for (let y = 0; y < height; y += 1) {
+    const offsetY = y * width * 4;
+    const flippedOffsetY = (height - y - 1) * width * 4;
+    flippedPixels.set(
+      pixels.subarray(offsetY, offsetY + width * 4),
+      flippedOffsetY
+    );
+  }
+  return flippedPixels;
+};
+
+const flipPixelsFloat32Y = (
+  pixels: Float32Array,
+  width: number,
+  height: number
+) => {
+  const flippedPixels = new Float32Array(pixels.length);
   for (let y = 0; y < height; y += 1) {
     const offsetY = y * width * 4;
     const flippedOffsetY = (height - y - 1) * width * 4;
@@ -308,7 +326,7 @@ export class LightBakerExample {
           pixelsUint[i] = Math.round(pixels[i] * 255);
         }
         const imageData = new ImageData(
-          flipPixelsY(
+          flipPixelsUint8Y(
             pixelsUint,
             this.lightmapTexture.width,
             this.lightmapTexture.height
@@ -325,6 +343,134 @@ export class LightBakerExample {
         link.href = dataURL;
         link.download = "lightmap.png";
         link.click();
+      });
+    this.pane
+      .addButton({
+        title: "Save position texture png",
+      })
+      .on("click", () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = this.positionTexture.width;
+        canvas.height = this.positionTexture.height;
+
+        const pixels = new Float32Array(
+          this.positionTexture.width * this.positionTexture.height * 4
+        );
+        this.renderer.readRenderTargetPixels(
+          this.positionTexture,
+          0,
+          0,
+          this.positionTexture.width,
+          this.positionTexture.height,
+          pixels
+        );
+
+        const pixelsUint = new Uint8ClampedArray(pixels.length);
+        this.positionTexture.width, this.positionTexture.height;
+        for (let i = 0; i < pixels.length; i += 1) {
+          pixelsUint[i] = Math.round(pixels[i] * 255);
+        }
+        const imageData = new ImageData(
+          flipPixelsUint8Y(
+            pixelsUint,
+            this.positionTexture.width,
+            this.positionTexture.height
+          ),
+          this.positionTexture.width,
+          this.positionTexture.height
+        );
+        const context = canvas.getContext("2d");
+        context.putImageData(imageData, 0, 0);
+        context.scale(1, -1);
+        context.drawImage(canvas, 0, 0);
+        const dataURL = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = dataURL;
+        link.download = "position.png";
+        link.click();
+      });
+    this.pane
+      .addButton({
+        title: "Save position",
+      })
+      .on("click", () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = this.positionTexture.width;
+        canvas.height = this.positionTexture.height;
+
+        const pixels = new Float32Array(
+          this.positionTexture.width * this.positionTexture.height * 4
+        );
+        this.renderer.readRenderTargetPixels(
+          this.positionTexture,
+          0,
+          0,
+          this.positionTexture.width,
+          this.positionTexture.height,
+          pixels
+        );
+        const pixelsFlipped = flipPixelsFloat32Y(
+          pixels,
+          this.positionTexture.width,
+          this.positionTexture.height
+        );
+
+        const pixelsFlippedUint8 = new Uint8Array(pixelsFlipped.buffer);
+        console.log(pixelsFlippedUint8.length);
+        console.log(pixelsFlipped.buffer.byteLength);
+        console.log(pixelsFlippedUint8.buffer.byteLength);
+        const pixelsFlippedUint8Deflated = pako.deflate(pixelsFlippedUint8);
+
+        const blob = new Blob([pixelsFlippedUint8Deflated], {
+          type: "application/octet-stream",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.download = "position.bin";
+        link.href = url;
+        link.click();
+      });
+    this.pane
+      .addButton({
+        title: "Show shadow poly",
+      })
+      .on("click", () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = this.positionTexture.width;
+        canvas.height = this.positionTexture.height;
+
+        const pixels = new Float32Array(
+          this.positionTexture.width * this.positionTexture.height * 4
+        );
+        this.renderer.readRenderTargetPixels(
+          this.positionTexture,
+          0,
+          0,
+          this.positionTexture.width,
+          this.positionTexture.height,
+          pixels
+        );
+        const pixelsFlipped = flipPixelsFloat32Y(
+          pixels,
+          this.positionTexture.width,
+          this.positionTexture.height
+        );
+        const pixelCoords = [
+          [3797, 1954],
+          [3798, 1954],
+          [3797, 1959],
+          [3747, 2099],
+          [3669, 2063],
+          [3675, 2030],
+          [3797, 1954],
+        ];
+
+        const getValueAt = (row: number, col: number) => {
+          const index = row * this.positionTexture.width * 4 + col * 4;
+          console.log("index: ", index);
+          return pixelsFlipped.slice(index, index + 4);
+        };
+        console.log("pixel 4045 1798: ", getValueAt(4045, 1798));
       });
     this.pane
       .addButton({
@@ -476,17 +622,17 @@ export class LightBakerExample {
     // this.scene.add(triMesh);
 
     const quadVec3s = [
-      new Vector3(0, 0, 0),
-      new Vector3(-1, 0, 0),
-      new Vector3(-1, 1, -1),
-      new Vector3(0, 1, -1),
+      new Vector3(0, 0, -0.5),
+      new Vector3(-1, 0, -0.5),
+      new Vector3(-1, 1, -1.5),
+      new Vector3(0, 1, -1.5),
     ];
     const quadGeom = getPolygonGeometryFromVector3s(quadVec3s, 0);
     quadGeom.computeVertexNormals();
     const quadMat = new MeshStandardMaterial({ color: 0x0000ff });
     const quadMesh = new Mesh(quadGeom, quadMat);
     quadMesh.name = "quad";
-    quadMesh.translateZ(-1);
+    // quadMesh.translateZ(-1);
     this.currentModelMeshs.push(quadMesh);
     currGroup.add(quadMesh);
     // this.scene.add(quadMesh);
