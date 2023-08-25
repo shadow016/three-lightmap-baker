@@ -208,7 +208,7 @@ export class LightBakerExample {
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 
-    this.directionalLight = new DirectionalLight(0xffffff, 1);
+    // this.directionalLight = new DirectionalLight(0xffffff, 1);
 
     this.lightDummy = new Object3D();
     this.lightDummy.position.copy(new Vector3(0, 1, 1).normalize());
@@ -240,7 +240,7 @@ export class LightBakerExample {
       .on("change", () => this.onRenderModeChange());
 
     this.pane.addInput(this.options, "lightMapSize", {
-      max: 4096,
+      max: 8192,
       min: 128,
       step: 128,
     });
@@ -455,7 +455,7 @@ export class LightBakerExample {
           this.positionTexture.width,
           this.positionTexture.height
         );
-        const pixelCoords = [
+        const arbitraryPixelCoords = [
           [3797, 1954],
           [3798, 1954],
           [3797, 1959],
@@ -467,10 +467,61 @@ export class LightBakerExample {
 
         const getValueAt = (row: number, col: number) => {
           const index = row * this.positionTexture.width * 4 + col * 4;
-          console.log("index: ", index);
           return pixelsFlipped.slice(index, index + 4);
         };
-        console.log("pixel 4045 1798: ", getValueAt(4045, 1798));
+        // const colRow = [3714, 2952];
+        // console.log(
+        //   `row ${colRow[1]}, col ${colRow[0]}`,
+        //   getValueAt(colRow[1], colRow[0])
+        // );
+        const arbitShadowVec3s = arbitraryPixelCoords.map((coord) => {
+          const value = getValueAt(coord[1], coord[0]);
+          return new Vector3(value[0], value[1], value[2]);
+        });
+        const arbitShadowGeom = getPolygonGeometryFromVector3s(
+          arbitShadowVec3s,
+          0.001
+        );
+        const shadowMaterial = new MeshBasicMaterial({ color: 0x00ff00 });
+        const arbitShadowMesh = new Mesh(arbitShadowGeom, shadowMaterial);
+        this.scene.add(arbitShadowMesh);
+
+        const quadPixelCoords = [
+          [3903, 3055],
+          [3903, 3158],
+          [3966, 3158],
+          [3966, 3055],
+          [3903, 3055],
+        ];
+        const quadShadowVec3s = quadPixelCoords.map((coord) => {
+          const value = getValueAt(coord[1], coord[0]);
+          return new Vector3(value[0], value[1], value[2]);
+        });
+        const quadShadowGeom = getPolygonGeometryFromVector3s(
+          quadShadowVec3s,
+          0.001
+        );
+        const quadShadowMesh = new Mesh(quadShadowGeom, shadowMaterial);
+        this.scene.add(quadShadowMesh);
+
+        const triPixelCoords = [
+          [3824, 1563],
+          [3827, 1563],
+          [3827, 1640],
+          [3763, 1665],
+          [3743, 1596],
+          [3824, 1563],
+        ];
+        const triShadowVec3s = triPixelCoords.map((coord) => {
+          const value = getValueAt(coord[1], coord[0]);
+          return new Vector3(value[0], value[1], value[2]);
+        });
+        const triShadowGeom = getPolygonGeometryFromVector3s(
+          triShadowVec3s,
+          0.001
+        );
+        const triShadowMesh = new Mesh(triShadowGeom, shadowMaterial);
+        this.scene.add(triShadowMesh);
       });
     this.pane
       .addButton({
@@ -622,10 +673,10 @@ export class LightBakerExample {
     // this.scene.add(triMesh);
 
     const quadVec3s = [
-      new Vector3(0, 0, -0.5),
-      new Vector3(-1, 0, -0.5),
-      new Vector3(-1, 1, -1.5),
-      new Vector3(0, 1, -1.5),
+      new Vector3(0, 0, -1),
+      new Vector3(-1, 0, -1),
+      new Vector3(-1, 1, -2),
+      new Vector3(0, 1, -2),
     ];
     const quadGeom = getPolygonGeometryFromVector3s(quadVec3s, 0);
     quadGeom.computeVertexNormals();
