@@ -276,27 +276,38 @@ export class LightBakerExample {
       .on("click", () => {
         this.options.pause = false;
         this.pane.refresh();
-        console.log(this.lightDummy.position);
+        // console.log(this.lightDummy.position);
 
         this.generateLightmap();
 
-        const group: Group = this.scene.getObjectByName("group");
-        console.log("group: ", group);
-        group.traverse((child: Mesh) => {
-          if (child.isMesh) {
-            console.log(`child: ${child.name}`);
-            console.log(child.geometry.getAttribute("uv2"));
-          }
-        });
+        // const group: Group = this.scene.getObjectByName("group");
+        // console.log("group: ", group);
+        // group.traverse((child: Mesh) => {
+        //   if (child.isMesh) {
+        //     console.log(`child: ${child.name}`);
+        //     console.log(child.geometry.getAttribute("uv2"));
+        //   }
+        // });
+
+        // this.lightmapper.render();
+        // this.options.pause = true;
 
         // Todo: Not sure why need this in a timeout...
         setTimeout(() => {
           this.lightmapper.render();
-          console.log("position texture: ", this.positionTexture.texture);
-          console.log("normal texture: ", this.normalTexture.texture);
-          console.log("lightmap texture: ", this.lightmapTexture.texture);
-          console.log("lightmap render target: ", this.lightmapTexture);
+          this.options.pause = true;
+          // console.log("position texture: ", this.positionTexture.texture);
+          // console.log("normal texture: ", this.normalTexture.texture);
+          // console.log("lightmap texture: ", this.lightmapTexture.texture);
+          // console.log("lightmap render target: ", this.lightmapTexture);
         }, 0);
+      });
+    this.pane
+      .addButton({
+        title: "Lightmap render",
+      })
+      .on("click", () => {
+        this.lightmapper.render();
       });
     this.pane
       .addButton({
@@ -768,7 +779,7 @@ export class LightBakerExample {
     this.positionTexture = atlas.positionTexture;
     this.normalTexture = atlas.normalTexture;
 
-    this.update();
+    // this.update();
 
     const mergedGeomerty = mergeGeometry(this.currentModelMeshs);
     const bvh = new MeshBVH(mergedGeomerty);
@@ -903,9 +914,9 @@ export class LightBakerExample {
   update() {
     requestAnimationFrame(() => this.update());
 
-    if (this.lightmapper && !this.options.pause) {
-      this.lightmapper.render();
-    }
+    // if (this.lightmapper && !this.options.pause) {
+    //   this.lightmapper.render();
+    // }
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
   }
