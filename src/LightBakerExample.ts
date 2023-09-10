@@ -223,6 +223,10 @@ export class LightBakerExample {
         this.controls.enabled = !event.value;
       }
     );
+    this.lightTranformController.addEventListener("mouseUp", () => {
+      console.log("mouseUp");
+      this.lightmapper.render();
+    });
     this.lightTranformController.attach(this.lightDummy);
     this.scene.add(this.lightDummy);
     this.scene.add(this.lightTranformController);
